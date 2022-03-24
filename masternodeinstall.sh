@@ -1,38 +1,35 @@
 #!/bin/bash
 
-PORT=7429
-RPCPORT=7430
-CONF_DIR=~/.altecoin
+PORT=3094
+RPCPORT=3095
+CONF_DIR=~/.bontecoin
 
 cd ~
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
-if [[ $(lsb_release -d) = *16.04* ]]; then
-  COINZIP='https://github.com/altecoin-altc/altecoin/releases/download/v1.0/altecoin_ubuntu16_v1.0.zip'
-fi
 if [[ $(lsb_release -d) = *18.04* ]]; then
-  COINZIP='https://github.com/altecoin-altc/altecoin/releases/download/v1.0/altecoin_ubuntu18_v1.0.zip'
+  COINZIP='https://github.com/bontecoin/BONTE/releases/download/v1.0/bonte_ubuntu18.zip'
 fi
-#if [[ $(lsb_release -d) = *20.04* ]]; then
-#  COINZIP='https://github.com/altecoin-altc/altecoin/releases/download/v1.0/altecoin_ubuntu20_v1.0.zip'
-#fi
+if [[ $(lsb_release -d) = *20.04* ]]; then
+  COINZIP='https://github.com/bontecoin/BONTE/releases/download/v1.0/bonte_ubuntu20.zip'
+fi
 if [[ $EUID -ne 0 ]]; then
    echo -e "${RED}$0 must be run as root.${NC}"
    exit 1
 fi
 
 function configure_systemd {
-  cat << EOF > /etc/systemd/system/altecoin.service
+  cat << EOF > /etc/systemd/system/bontecoin.service
 [Unit]
-Description=ALtecoin Service
+Description=Bontecoin Service
 After=network.target
 [Service]
 User=root
 Group=root
 Type=forking
-ExecStart=/usr/local/bin/altecoind
-ExecStop=-/usr/local/bin/altecoin-cli stop
+ExecStart=/usr/local/bin/bontecoind
+ExecStop=-/usr/local/bin/bontecoin-cli stop
 Restart=always
 PrivateTmp=true
 TimeoutStopSec=60s
@@ -44,8 +41,8 @@ WantedBy=multi-user.target
 EOF
   systemctl daemon-reload
   sleep 2
-  systemctl enable altecoin.service
-  systemctl start altecoin.service
+  systemctl enable bontecoin.service
+  systemctl start bontecoin.service
 }
 
 echo ""
@@ -54,11 +51,9 @@ DOSETUP="y"
 
 if [ $DOSETUP = "y" ]  
 then
-  sudo apt-get update
-  sudo apt-get -y upgrade
-  sudo apt-get -y dist-upgrade
-  sudo apt-get update
-  sudo apt-get update && apt-get dist-upgrade -y && apt install nano htop -y && apt-get install build-essential libtool autotools-dev autoconf pkg-config libssl-dev -y && apt-get install libboost-all-dev git libminiupnpc-dev -y && apt-get install software-properties-common -y && apt install -y make build-essential libtool software-properties-common autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git curl bsdmainutils libminiupnpc-dev libgmp3-dev pkg-config libevent-dev unzip && sudo add-apt-repository ppa:bitcoin/bitcoin -y && sudo apt-get update -y && sudo apt-get install libdb4.8-dev libdb4.8++-dev -y && sudo apt-get install make automake cmake curl g++-multilib libtool binutils-gold bsdmainutils pkg-config python3 -y && sudo apt-get install curl librsvg2-bin libtiff-tools bsdmainutils cmake imagemagick libcap-dev libz-dev libbz2-dev python-setuptools -y && apt-get install libzmq3-dev -y && apt-get install libdb5.3++-dev iotop -y && sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update -y && sudo apt-get upgrade libstdc++6 -y
+  sudo apt-get update && sudo apt-get upgrade -y
+  sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3 libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libboost-all-dev libboost-program-options-dev libminiupnpc-dev libzmq3-dev libprotobuf-dev protobuf-compiler unzip software-properties-common cmake zip screen htop curl -y
+  sudo apt-get install software-properties-common -y && sudo add-apt-repository ppa:pivx/pivx -y && sudo apt-get update && sudo apt-get install libdb4.8-dev libdb4.8++-dev -y
 
   cd /var
   sudo touch swap.img
@@ -73,14 +68,14 @@ then
   cd /usr/local/bin/
   wget $COINZIP
   unzip *.zip
-  chmod +x altecoin*
-  rm altecoin-qt altecoin-tx *.zip
+  chmod +x bontecoin*
+  rm bontecoin-qt bontecoin-tx *.zip
   
   mkdir -p $CONF_DIR
   cd $CONF_DIR
-  wget http://cdn.delion.xyz/altc.zip
-  unzip altc.zip
-  rm altc.zip
+  wget http://bontecoin.com/snapshot.zip
+  unzip snapshot.zip
+  rm snapshot.zip
 
 fi
 
@@ -92,24 +87,23 @@ fi
  echo "Enter masternode private key"
  read PRIVKEY
  
-  echo "rpcuser=user"`shuf -i 100000-10000000 -n 1` >> altecoin.conf_TEMP
-  echo "rpcpassword=pass"`shuf -i 100000-10000000 -n 1` >> altecoin.conf_TEMP
-  echo "rpcallowip=127.0.0.1" >> altecoin.conf_TEMP
-  echo "rpcport=$RPCPORT" >> altecoin.conf_TEMP
-  echo "listen=1" >> altecoin.conf_TEMP
-  echo "server=1" >> altecoin.conf_TEMP
-  echo "daemon=1" >> altecoin.conf_TEMP
-  echo "maxconnections=250" >> altecoin.conf_TEMP
-  echo "masternode=1" >> altecoin.conf_TEMP
-  echo "dbcache=20" >> altecoin.conf_TEMP
-  echo "maxorphantx=5" >> altecoin.conf_TEMP
-  echo "maxmempool=100" >> altecoin.conf_TEMP
-  echo "" >> altecoin.conf_TEMP
-  echo "port=$PORT" >> altecoin.conf_TEMP
-  echo "externalip=$IP:$PORT" >> altecoin.conf_TEMP
-  echo "masternodeaddr=$IP:$PORT" >> altecoin.conf_TEMP
-  echo "masternodeprivkey=$PRIVKEY" >> altecoin.conf_TEMP
-  mv altecoin.conf_TEMP altecoin.conf
+  echo "rpcuser=user"`shuf -i 100000-10000000 -n 1` >> bontecoin.conf_TEMP
+  echo "rpcpassword=pass"`shuf -i 100000-10000000 -n 1` >> bontecoin.conf_TEMP
+  echo "rpcallowip=127.0.0.1" >> bontecoin.conf_TEMP
+  echo "rpcport=$RPCPORT" >> bontecoin.conf_TEMP
+  echo "listen=1" >> bontecoin.conf_TEMP
+  echo "server=1" >> bontecoin.conf_TEMP
+  echo "daemon=1" >> bontecoin.conf_TEMP
+  echo "maxconnections=250" >> bontecoin.conf_TEMP
+  echo "masternode=1" >> bontecoin.conf_TEMP
+  echo "dbcache=100" >> bontecoin.conf_TEMP
+  echo "maxorphantx=5" >> bontecoin.conf_TEMP
+  echo "" >> bontecoin.conf_TEMP
+  echo "port=$PORT" >> bontecoin.conf_TEMP
+  echo "externalip=$IP:$PORT" >> bontecoin.conf_TEMP
+  echo "masternodeaddr=$IP:$PORT" >> bontecoin.conf_TEMP
+  echo "masternodeprivkey=$PRIVKEY" >> bontecoin.conf_TEMP
+  mv bontecoin.conf_TEMP bontecoin.conf
   cd
   echo ""
   echo -e "Your ip is ${GREEN}$IP:$PORT${NC}"
@@ -119,12 +113,12 @@ fi
   
 echo ""
 echo "Commands:"
-echo -e "Start Altecoin Service: ${GREEN}systemctl start altecoin${NC}"
-echo -e "Check Altecoin Status Service: ${GREEN}systemctl status altecoin${NC}"
-echo -e "Stop Altecoin Service: ${GREEN}systemctl stop altecoin${NC}"
-echo -e "Check Masternode Status: ${GREEN}altecoin-cli getmasternodestatus${NC}"
+echo -e "Start Bontecoin Service: ${GREEN}systemctl start bontecoin${NC}"
+echo -e "Check Bontecoin Status Service: ${GREEN}systemctl status bontecoin${NC}"
+echo -e "Stop Bontecoin Service: ${GREEN}systemctl stop bontecoin${NC}"
+echo -e "Check Masternode Status: ${GREEN}bontecoin-cli getmasternodestatus${NC}"
 
 echo ""
-echo -e "${GREEN}Altecoin Masternode Installation Done${NC}"
+echo -e "${GREEN}Bontecoin Masternode Installation Done${NC}"
 exec bash
 exit
