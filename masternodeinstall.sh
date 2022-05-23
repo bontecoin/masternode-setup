@@ -47,6 +47,7 @@ DOSETUP="y"
 
 if [ $DOSETUP = "y" ]  
 then
+  apt install zip unzip git curl wget -y
   cd /usr/local/bin/
   wget $COINZIP
   unzip *.zip
